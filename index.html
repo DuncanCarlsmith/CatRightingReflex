@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cat Righting Reflex - Full &amp; Half Cylinder</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Source+Sans+3:wght@400;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Source Sans 3',sans-serif;background:#ddd9d0;color:#2a2a2a;overflow:hidden;height:100vh}
+#cv{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1}
+.pnl{position:absolute;z-index:10;background:rgba(255,255,252,0.94);border:1.5px solid #aaa;border-radius:10px;padding:10px 14px;box-shadow:0 2px 10px rgba(0,0,0,0.12)}
+#ctl{bottom:10px;left:10px;right:10px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.sg{display:flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:#333;white-space:nowrap}
+.sg input[type=range]{width:90px}
+.sg .v{color:#1a5a1a;font-weight:700;min-width:46px;text-align:right}
+input[type=range]{-webkit-appearance:none;height:5px;background:#bbb;border-radius:3px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:#336;cursor:pointer;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.3)}
+.inf{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:#333;white-space:nowrap}
+.inf .hi{color:#b33000;font-weight:700;font-size:14px}
+.inf .gr{color:#1a5a1a}
+.btns{display:flex;gap:4px;flex-wrap:wrap}
+.btns button{padding:6px 10px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;text-transform:uppercase;border:2px solid #336;border-radius:6px;background:#eef;color:#336;cursor:pointer;white-space:nowrap}
+.btns button:hover{background:#ddf}
+.btns button.ac{background:#336;color:#fff}
+.btns button.mode{border-color:#960;background:#fed;color:#960}
+.btns button.mode.ac{background:#960;color:#fff}
+#ad{top:8px;left:14px;min-width:200px;font-family:'JetBrains Mono',monospace}
+#ad .bg{font-size:30px;font-weight:700;color:#b33000;line-height:1.1}
+#ad .sb{font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.08em;margin-top:2px}
+#ad .si{margin-top:4px;font-size:12px;font-weight:600;color:#444}
+#ad .note{margin-top:3px;font-size:10px;color:#888}
+#leg{top:8px;right:14px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#555;line-height:1.8}
+#leg .li{display:flex;align-items:center;gap:6px}
+#leg .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;border:1px solid rgba(0,0,0,0.2)}
+#leg .ln{width:16px;height:3px;flex-shrink:0;border-radius:1px}
+.btns button.help{border-color:#555;background:#f8f8f6;color:#555}
+.btns button.help:hover{background:#eee;border-color:#333}
+#helpOverlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);z-index:100;justify-content:center;align-items:flex-start;overflow-y:auto;padding:30px 20px}
+#helpBox{background:rgba(255,255,252,0.97);border-radius:12px;max-width:640px;width:100%;padding:28px 32px;box-shadow:0 8px 40px rgba(0,0,0,0.25);position:relative;font-family:'Source Sans 3',sans-serif}
+#helpBox h2{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:#333;margin:0 0 12px}
+#helpBox p{font-size:14px;line-height:1.65;color:#444;margin:0 0 12px}
+#helpBox p a{color:#336;text-decoration:underline}
+#helpBox .hb{font-weight:700;color:#333}
+#helpBox .hi{font-style:italic}
+#helpClose{position:absolute;top:12px;right:16px;font-size:22px;cursor:pointer;color:#888;background:none;border:none;font-family:sans-serif;line-height:1}
+#helpClose:hover{color:#333}
+#helpBox .copy{font-size:12px;color:#888;margin-top:16px;text-align:center}
+</style>
+</head>
+<body>
+<div id="cv"></div>
+
+<div class="pnl" id="ad">
+  <div class="bg" id="fa">0.0 deg</div>
+  <div class="sb">Whole-body flip</div>
+  <div class="si">Spin: <span id="sa">0.0 deg</span> | Gearing: <span id="gr" style="color:#1a5a1a"></span></div>
+  <div class="note" id="mn">Full cylinder | Default: ~1 turn spin = 180 deg flip</div>
+</div>
+
+<div class="pnl" id="leg">
+  <div class="li"><div class="dot" style="background:#333"></div> Joint</div>
+  <div class="li"><div class="dot" style="background:#ddaa00"></div> Cylinder COM</div>
+  <div class="li"><div class="dot" style="background:#dd2200"></div> System COM (origin)</div>
+  <div class="li"><span style="color:#dd6600;font-size:14px;min-width:22px;text-align:center">&#x2192;</span> J of each half (from COM)</div>
+  <div class="li"><span style="color:#8833cc;font-size:14px;min-width:22px;text-align:center">&#x2192;</span> L_total (from origin)</div>
+  <div class="li"><span style="color:#22aa44;font-size:14px;min-width:22px;text-align:center">&#x2192;</span> Torque impulse (at joint, start)</div>
+  <div class="li"><span style="color:#888;min-width:22px;text-align:center">- -</span> Axis constraint lines</div>
+</div>
+
+<div class="pnl" id="ctl">
+  <div class="sg">theta<input type="range" id="ts" min="20" max="160" value="90"><span class="v" id="tv">90 deg</span></div>
+  <div class="sg">R/ell<input type="range" id="rs" min="5" max="80" value="35"><span class="v" id="rv">0.35</span></div>
+  <div class="sg">Speed<input type="range" id="ss" min="1" max="40" value="10"><span class="v" id="sv">1.0x</span></div>
+  <div class="inf">Flip/turn: <span class="gr" id="fpt"></span></div>
+  <div class="inf">Turns for 180: <span class="hi" id="tv2"></span></div>
+  <div class="btns">
+    <button id="bm" class="mode ac">Full Cyl</button>
+    <button id="bp">Play</button>
+    <button id="br">Reset</button>
+    <button id="bd">Defaults</button>
+    <button id="bh" class="help">Help</button>
+  </div>
+</div>
+
+<div id="helpOverlay">
+<div id="helpBox">
+<button id="helpClose">&times;</button>
+<h2>Cat Righting Reflex</h2>
+<p>The cat righting reflex is the ability of cats and many other animals to reorient during a fall to land on their feet, starting from rest with zero angular momentum. (<a href="https://en.wikipedia.org/wiki/Cat_righting_reflex" target="_blank">Wikipedia</a>)</p>
+<p><span class="hb">The model.</span> Two identical cylinders (or half-cylinders) of radius <span class="hi">R</span> and length <span class="hi">L</span> are joined at a fixed bend angle <span class="hi">&theta;</span>. A no-wringing constraint requires equal and opposite spin rates +<span class="hi">&omega;</span> (front) and &minus;<span class="hi">&omega;</span> (rear) about their geometric axes. The spin angular momentum of each half about the system center of mass is <span style="color:#DD6600;font-weight:700;font-style:italic">S</span><sub>F</sub> and <span style="color:#DD6600;font-weight:700;font-style:italic">S</span><sub>R</sub>. Because the axes are not parallel, <span style="color:#DD6600;font-weight:700;font-style:italic">S</span><sub>T</sub> = <span style="color:#DD6600;font-style:italic">S</span><sub>F</sub> + <span style="color:#DD6600;font-style:italic">S</span><sub>R</sub> points along the x-axis. Conservation of angular momentum requires <span style="color:#8833CC;font-weight:700;font-style:italic">L</span> = &minus;<span style="color:#DD6600;font-style:italic">S</span><sub>T</sub>: the whole body counter-rotates about x. This is the righting flip. An impulsive torque <span style="color:#22AA44;font-style:italic">&tau;</span> at the joint initiates the spins; the equal and opposite reaction &minus;<span style="color:#22AA44;font-style:italic">&tau;</span> acts on the other half.</p>
+<svg width="100%" viewBox="0 0 680 400" style="margin:16px 0 8px">
+<defs>
+<marker id="ha" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="hab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1.5 1L8 5L1.5 9" fill="none" stroke="context-stroke" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker>
+</defs>
+<line x1="55" y1="210" x2="625" y2="210" stroke="#aaa" stroke-width="0.3" opacity="0.18"/>
+<line x1="340" y1="28" x2="340" y2="355" stroke="#aaa" stroke-width="0.3" opacity="0.18"/>
+<text x="632" y="214" font-size="12" fill="#aaa" opacity="0.28">x</text>
+<text x="346" y="36" font-size="12" fill="#aaa" opacity="0.28">y</text>
+<line x1="316" y1="268" x2="194" y2="146" stroke="#378ADD" stroke-width="44" stroke-linecap="butt" opacity="0.2"/>
+<line x1="364" y1="268" x2="486" y2="146" stroke="#D85A30" stroke-width="44" stroke-linecap="butt" opacity="0.2"/>
+<line x1="340" y1="290" x2="514" y2="116" stroke="#999" stroke-width="1" stroke-dasharray="6 3" opacity="0.5"/>
+<line x1="340" y1="290" x2="166" y2="116" stroke="#999" stroke-width="1" stroke-dasharray="6 3" opacity="0.5"/>
+<path d="M 364 268 A 34 34 0 0 0 316 268" fill="none" stroke="#555" stroke-width="1.2"/>
+<circle cx="340" cy="290" r="5" fill="#444" opacity="0.85"/>
+<circle cx="425" cy="207" r="4.5" fill="#DDAA00" stroke="#997700" stroke-width="0.5"/>
+<circle cx="255" cy="207" r="4.5" fill="#DDAA00" stroke="#997700" stroke-width="0.5"/>
+<circle cx="340" cy="210" r="5" fill="#DD2200" stroke="#990000" stroke-width="0.5"/>
+<line x1="425" y1="207" x2="490" y2="142" stroke="#DD6600" stroke-width="2.8" marker-end="url(#hab)"/>
+<line x1="255" y1="207" x2="315" y2="267" stroke="#DD6600" stroke-width="2.8" marker-end="url(#hab)"/>
+<path d="M 471 174 A 13 13 0 1 1 463 162" fill="none" stroke="#D85A30" stroke-width="1.3" marker-end="url(#ha)" opacity="0.8"/>
+<path d="M 209 174 A 13 13 0 1 0 217 162" fill="none" stroke="#378ADD" stroke-width="1.3" marker-end="url(#ha)" opacity="0.8"/>
+<line x1="340" y1="210" x2="472" y2="210" stroke="#DD6600" stroke-width="3.5" marker-end="url(#hab)"/>
+<line x1="340" y1="210" x2="208" y2="210" stroke="#8833CC" stroke-width="3.5" marker-end="url(#hab)"/>
+<line x1="340" y1="290" x2="340" y2="352" stroke="#22AA44" stroke-width="2.5" marker-end="url(#hab)"/>
+<line x1="340" y1="290" x2="340" y2="228" stroke="#22AA44" stroke-width="2.5" marker-end="url(#hab)"/>
+<text x="502" y="134" font-size="14" fill="#DD6600" font-weight="500" font-style="italic">S</text>
+<text x="514" y="139" font-size="10" fill="#DD6600">F</text>
+<text x="308" y="292" font-size="14" fill="#DD6600" font-weight="500" font-style="italic">S</text>
+<text x="320" y="297" font-size="10" fill="#DD6600">R</text>
+<text x="388" y="172" font-size="13" fill="#D85A30" opacity="0.85" text-anchor="end">+&#969;</text>
+<text x="292" y="172" font-size="13" fill="#378ADD" opacity="0.85">&#8722;&#969;</text>
+<text x="480" y="200" font-size="14" fill="#DD6600" font-weight="500" font-style="italic">S</text>
+<text x="492" y="205" font-size="10" fill="#DD6600">T</text>
+<text x="190" y="200" font-size="14" fill="#8833CC" font-weight="500" font-style="italic">L</text>
+<text x="350" y="360" font-size="14" fill="#22AA44" font-style="italic">&#964;</text>
+<text x="350" y="226" font-size="14" fill="#22AA44">&#8722;&#964;</text>
+<text x="290" y="388" font-size="14" font-weight="500" font-style="italic">S</text>
+<text x="301" y="392" font-size="10">T</text>
+<text x="318" y="388" font-size="14" font-weight="500">+</text>
+<text x="338" y="388" font-size="14" fill="#8833CC" font-weight="500" font-style="italic">L</text>
+<text x="358" y="388" font-size="14" font-weight="500">= 0</text>
+</svg>
+<p><span class="hb">Controls.</span> <span class="hi">&theta;</span> = opening angle between axes. <span class="hi">R/L</span> = aspect ratio. Speed = animation rate. Toggle Full Cyl / Half Cyl to compare models. Drag to rotate view; scroll to zoom.</p>
+<p class="copy">&copy; 2026 D. Carlsmith, University of Wisconsin&ndash;Madison</p>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// === RENDERER ===
+const ren=new THREE.WebGLRenderer({antialias:true});
+ren.setSize(innerWidth,innerHeight);ren.setPixelRatio(Math.min(devicePixelRatio,2));
+ren.setClearColor(0xddd9d0,1);
+document.getElementById('cv').appendChild(ren.domElement);
+
+const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(40,innerWidth/innerHeight,0.1,200);
+sc.add(new THREE.AmbientLight(0xffffff,0.45));
+const sun=new THREE.DirectionalLight(0xffffff,0.85);sun.position.set(5,10,8);sc.add(sun);
+// (removed duplicate light)
+const fl2=new THREE.DirectionalLight(0x99aacc,0.3);fl2.position.set(-6,4,-4);sc.add(fl2);
+const fl3=new THREE.DirectionalLight(0xffddaa,0.2);fl3.position.set(0,-3,6);sc.add(fl3);
+
+// === GRID + STATIC AXES ===
+const grd=new THREE.GridHelper(8,16,0x999999,0xc4c0b8);grd.material.transparent=true;grd.material.opacity=0.35;sc.add(grd);
+function mkAx(d,len){return new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),d.clone().multiplyScalar(len)]),new THREE.LineBasicMaterial({color:0x666666,transparent:true,opacity:0.5}))}
+sc.add(mkAx(new THREE.Vector3(1,0,0),2.2));sc.add(mkAx(new THREE.Vector3(0,1,0),2.2));sc.add(mkAx(new THREE.Vector3(0,0,1),2.2));
+sc.add(mkAx(new THREE.Vector3(-1,0,0),2.2));sc.add(mkAx(new THREE.Vector3(0,-1,0),2.2));sc.add(mkAx(new THREE.Vector3(0,0,-1),2.2));
+function mkL(t,p){const cv=document.createElement('canvas');cv.width=64;cv.height=64;const x=cv.getContext('2d');x.font='bold 48px monospace';x.fillStyle='#666';x.textAlign='center';x.textBaseline='middle';x.fillText(t,32,32);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),transparent:true}));s.position.copy(p);s.scale.set(0.25,0.25,1);return s}
+sc.add(mkL('x',new THREE.Vector3(2.35,0,0)));sc.add(mkL('y',new THREE.Vector3(0,2.35,0)));sc.add(mkL('z',new THREE.Vector3(0,0,2.35)));
+
+// === CAMERA ORBIT ===
+let ot=0,op=0.3,od=9,drag=false,lm={x:0,y:0};
+function uc(){cam.position.set(od*Math.sin(ot)*Math.cos(op),od*Math.sin(op),od*Math.cos(ot)*Math.cos(op));cam.lookAt(0,0,0)}
+ren.domElement.addEventListener('pointerdown',e=>{drag=true;lm={x:e.clientX,y:e.clientY}});
+window.addEventListener('pointerup',()=>drag=false);
+window.addEventListener('pointermove',e=>{if(!drag)return;ot-=(e.clientX-lm.x)*0.006;op+=(e.clientY-lm.y)*0.006;lm={x:e.clientX,y:e.clientY}});
+ren.domElement.addEventListener('wheel',e=>{od=Math.max(3,Math.min(20,od+e.deltaY*0.006));e.preventDefault()},{passive:false});
+uc();
+
+// === STATE ===
+let mode='full'; // 'full' or 'half'
+let td=90, r0=0.35, spd=1, playing=false, spin=0;
+const DEF_TD=90, DEF_R0=0.35;
+const DEF_TD_HALF=90, DEF_R0_HALF=0.50;
+
+// === PHYSICS ===
+function physFull(t,r){
+  const a=t/2*Math.PI/180,sa=Math.sin(a),ca=Math.cos(a),R2=r*r;
+  const Ixx=(1-3*R2)*ca*ca+6*R2;
+  const rat=6*R2*sa/Ixx;
+  return{rat,Ixx,a,sa,ca};
+}
+function physHalf(t,r,L){
+  // r = R/L, R=r*L, but we need R and L separately for the half-cyl formula
+  // In this code, r0 = R/ell. For half-cyl, ell=L (s=0 to L).
+  const a=t/2*Math.PI/180,sa=Math.sin(a),ca=Math.cos(a);
+  const R=r, Lv=1; // normalized: ell=1, R=r0
+  const c1=9*Math.PI*Math.PI-32, c2=9*Math.PI*Math.PI-64;
+  const num=2*c1*R*R*sa;
+  const den=3*Math.PI*Math.PI*Lv*Lv*ca*ca+R*R*(9*Math.PI*Math.PI+c2*sa*sa);
+  const rat=num/den;
+  return{rat,a,sa,ca};
+}
+
+// === BUILD CYLINDER GEOMETRY ===
+const ws=new THREE.Group(); sc.add(ws);
+let dynObjs=[]; // objects to remove on rebuild
+
+function clearDyn(){dynObjs.forEach(o=>{if(o.parent)o.parent.remove(o);else sc.remove(o)});dynObjs=[];while(ws.children.length)ws.remove(ws.children[0])}
+
+function mkFace(bs){
+  // Cat face features, protruding in +Y direction (local), at Y=0 surface
+  const dm=new THREE.MeshPhongMaterial({color:0x222222,shininess:20});
+  const g=new THREE.Group();
+  // Eyes
+  const eyeG=new THREE.SphereGeometry(0.045,10,6,0,Math.PI*2,0,Math.PI/2);
+  var eL=new THREE.Mesh(eyeG,dm);eL.position.set(-0.1,0,0.06);g.add(eL);
+  var eR=new THREE.Mesh(eyeG.clone(),dm.clone());eR.position.set(0.1,0,0.06);g.add(eR);
+  // Nose
+  var ns=new THREE.Mesh(new THREE.ConeGeometry(0.025,0.05,3),dm.clone());ns.position.set(0,0.025,-0.01);g.add(ns);
+  // Ears
+  const earG=new THREE.ConeGeometry(0.035,0.12,4);
+  var eaL=new THREE.Mesh(earG,dm.clone());eaL.position.set(-0.13,0.06,0.13);eaL.rotation.z=0.2;g.add(eaL);
+  var eaR=new THREE.Mesh(earG.clone(),dm.clone());eaR.position.set(0.13,0.06,0.13);eaR.rotation.z=-0.2;g.add(eaR);
+  // Whiskers
+  function mkWh(x1,z1,x2,z2){const dx=x2-x1,dz=z2-z1,len=Math.sqrt(dx*dx+dz*dz);const bar=new THREE.Mesh(new THREE.BoxGeometry(len,0.008,0.008),dm.clone());bar.position.set((x1+x2)/2,0.005,(z1+z2)/2);bar.rotation.y=-Math.atan2(dz,dx);return bar}
+  g.add(mkWh(-0.05,-0.02,-0.22,0.02));g.add(mkWh(-0.05,-0.04,-0.22,-0.07));
+  g.add(mkWh(0.05,-0.02,0.22,0.02));g.add(mkWh(0.05,-0.04,0.22,-0.07));
+  // Mouth arc
+  for(let i=0;i<8;i++){const t2=i/7,a2=Math.PI+0.3+t2*(Math.PI-0.6);
+    var md=new THREE.Mesh(new THREE.BoxGeometry(0.012,0.006,0.006),dm.clone());md.position.set(0.07*Math.cos(a2),0.004,-0.04+0.04*Math.sin(a2));g.add(md)}
+  const w=new THREE.Group();w.add(g);w.rotation.y=-bs*Math.PI/2;
+  return w;
+}
+
+function mkFeet(bs){
+  const xm=new THREE.MeshBasicMaterial({color:0x111111,side:THREE.DoubleSide});
+  function mkX(sz){const gr=new THREE.Group(),w=sz*0.18;
+    gr.add(new THREE.Mesh(new THREE.BoxGeometry(sz*2.2,w,w),xm).rotateZ(Math.PI/4));
+    gr.add(new THREE.Mesh(new THREE.BoxGeometry(sz*2.2,w,w),xm).rotateZ(-Math.PI/4));return gr}
+  const g=new THREE.Group();g.add(mkX(0.1));g.add(mkX(0.1));return g;
+}
+
+function buildScene(){
+  clearDyn();
+  const S=1.3; // visual scale
+  const a=td/2*Math.PI/180, sa=Math.sin(a), ca=Math.cos(a);
+  const vR=r0*S, vL=S; // visual R and L (ell=S)
+  const s1_full=Math.max(vR/Math.tan(a+0.001),0.03);
+  const sb_full=s1_full+vL/2; // sbar for full cyl
+  const delta=4*vR/(3*Math.PI);
+
+  // Joint position from system COM
+  let jy; // joint y in COM frame
+  if(mode==='full'){
+    jy=-sb_full*ca; // full: COM at sbar*ca above joint
+  } else {
+    jy=-((vL/2)*ca - delta*sa); // half: COM offset includes delta
+  }
+
+  // --- Build each cylinder group ---
+  const fG=new THREE.Group(), rG=new THREE.Group();
+  ws.add(fG); ws.add(rG);
+
+  if(mode==='full'){
+    // Full cylinder: CylinderGeometry axis along Y, length vL, radius vR
+    // Each cylinder's local Y axis = its geometric axis
+    // Position: center at sbar along axis from joint
+
+    function mkFullCyl(color,bs){
+      const g=new THREE.Group();
+      const mat=new THREE.MeshPhongMaterial({color,transparent:true,opacity:0.5,side:THREE.DoubleSide,shininess:60,specular:0x444444});
+      g.add(new THREE.Mesh(new THREE.CylinderGeometry(vR,vR,vL,48),mat));
+      const cpm=new THREE.MeshPhongMaterial({color,transparent:true,opacity:0.6,side:THREE.DoubleSide,shininess:40});
+      const tc=new THREE.Mesh(new THREE.CircleGeometry(vR,48),cpm);tc.rotation.x=-Math.PI/2;tc.position.y=vL/2;g.add(tc);
+      const bc=new THREE.Mesh(new THREE.CircleGeometry(vR,48),cpm.clone());bc.rotation.x=Math.PI/2;bc.position.y=-vL/2;g.add(bc);
+      // Feet
+      const ft=mkFeet(bs);
+      const fs=Math.max(vR*0.35,0.04);
+      ft.children[0].position.set(bs*(vR+0.005),-vL*0.22,0);ft.children[0].scale.setScalar(fs/0.1);ft.children[0].rotation.set(0,Math.PI/2,0);
+      ft.children[1].position.set(bs*(vR+0.005),vL*0.22,0);ft.children[1].scale.setScalar(fs/0.1);ft.children[1].rotation.set(0,Math.PI/2,0);
+      g.add(ft);
+      // Face
+      const fc=mkFace(bs);fc.position.y=vL/2+0.001;const fsc=vR/0.35;fc.scale.set(fsc,fsc,fsc);
+      g.add(fc);
+      return g;
+    }
+
+    const fCyl=mkFullCyl(0x3377dd,-1);
+    fCyl.position.set(sb_full*sa,0,0); // center on x-axis in COM frame
+    fG.add(fCyl);
+    fG.userData={sb:sb_full,type:'full'};
+
+    const rCyl=mkFullCyl(0xdd4444,1);
+    rCyl.position.set(-sb_full*sa,0,0);
+    rG.add(rCyl);
+    rG.userData={sb:sb_full,type:'full'};
+
+  } else {
+    // Half cylinder mode: s from 0 to L (overlapping at joint for now)
+    // Local Y = geometric axis, belly = +X direction in local frame
+    // The solid belly half is the +X side (phi 0..pi around Y axis in XZ plane)
+    // The wireframe half is the -X side
+
+    function mkHalfCylCombo(color,bs){
+      const g=new THREE.Group();
+      const nA=24,nL=1;
+
+      // In local frame: Y=axis, belly=+X, so a cross-section in XZ plane:
+      // solid half: angle 0..pi (X goes + to -, Z goes 0 to + to 0)
+      // wireframe half: angle pi..2pi
+
+      // --- Solid belly half ---
+      // bs=-1 (front): belly outward = +X side. bs=+1 (rear): belly outward = -X side.
+      const phiOff = (bs===1) ? Math.PI : 0;
+      // Curved surface: phi from -pi/2 to pi/2 around Y axis
+      // x = R*cos(phi), z = R*sin(phi), y ranges over [-L/2, L/2]
+      const sv=[],sn=[],si=[];
+      for(let j=0;j<=nL;j++){const y=(-0.5+j)*vL;
+        for(let i=0;i<=nA;i++){const p=phiOff-Math.PI/2+i/nA*Math.PI;
+          sv.push(vR*Math.cos(p),y,vR*Math.sin(p));
+          sn.push(Math.cos(p),0,Math.sin(p))}}
+      for(let j=0;j<nL;j++) for(let i=0;i<nA;i++){
+        const a2=j*(nA+1)+i,b2=a2+nA+1;
+        si.push(a2,b2,a2+1,a2+1,b2,b2+1)}
+      // Flat face (x=0 plane, the cut face): rectangle from z=-R to z=R, y=-L/2 to L/2
+      let fb=sv.length/3;
+      sv.push(0,-vL/2,-vR);sn.push(-1,0,0);
+      sv.push(0,-vL/2,vR);sn.push(-1,0,0);
+      sv.push(0,vL/2,vR);sn.push(-1,0,0);
+      sv.push(0,vL/2,-vR);sn.push(-1,0,0);
+      si.push(fb,fb+1,fb+2,fb,fb+2,fb+3);
+      // End caps (half-disks at y=-L/2 and y=+L/2)
+      for(let side=0;side<2;side++){const y=side?vL/2:-vL/2,ny=side?1:-1;
+        const ci=sv.length/3;
+        sv.push(0,y,0);sn.push(0,ny,0);
+        for(let i=0;i<=nA;i++){const p=phiOff-Math.PI/2+i/nA*Math.PI;
+          sv.push(vR*Math.cos(p),y,vR*Math.sin(p));sn.push(0,ny,0)}
+        for(let i=0;i<nA;i++){
+          side?si.push(ci,ci+1+i,ci+2+i):si.push(ci,ci+2+i,ci+1+i)}}
+
+      const sg=new THREE.BufferGeometry();
+      sg.setAttribute('position',new THREE.Float32BufferAttribute(sv,3));
+      sg.setAttribute('normal',new THREE.Float32BufferAttribute(sn,3));
+      sg.setIndex(si);sg.computeVertexNormals();
+      g.add(new THREE.Mesh(sg,new THREE.MeshPhongMaterial({color,transparent:true,opacity:0.5,side:THREE.DoubleSide,shininess:60})));
+
+      // --- Wireframe other half (phi pi/2..3pi/2, the -X side) ---
+      const wv=[],wi=[];
+      const wA=12,wL=6;
+      const wPhiOff = (bs===1) ? 0 : Math.PI;
+      for(let i=0;i<=wA;i++){const p=wPhiOff-Math.PI/2+i/wA*Math.PI;
+        const x=vR*Math.cos(p),z=vR*Math.sin(p);
+        for(let j=0;j<=wL;j++){wv.push(x,(-0.5+j/wL)*vL,z)}
+        const base=(wv.length/3)-(wL+1);
+        for(let j=0;j<wL;j++){wi.push(base+j,base+j+1)}}
+      for(let j=0;j<=wL;j++){const y=(-0.5+j/wL)*vL;
+        const base=wv.length/3;
+        const wPhiOff = (bs===1) ? 0 : Math.PI;
+        for(let i=0;i<=wA;i++){const p=wPhiOff-Math.PI/2+i/wA*Math.PI;wv.push(vR*Math.cos(p),y,vR*Math.sin(p))}
+        for(let i=0;i<wA;i++){wi.push(base+i,base+i+1)}}
+      // End cap wireframe
+      for(let side=0;side<2;side++){const y=side?vL/2:-vL/2;
+        const base=wv.length/3;wv.push(0,y,0);
+        const wPhiOff = (bs===1) ? 0 : Math.PI;
+        for(let i=0;i<=wA;i++){const p=wPhiOff-Math.PI/2+i/wA*Math.PI;wv.push(vR*Math.cos(p),y,vR*Math.sin(p))}
+        for(let i=0;i<wA;i++){wi.push(base,base+1+i);wi.push(base+1+i,base+2+i)}}
+      // Flat face wireframe at x=0
+      {const base=wv.length/3;
+        wv.push(0,-vL/2,-vR);wv.push(0,-vL/2,vR);wv.push(0,vL/2,vR);wv.push(0,vL/2,-vR);
+        wi.push(base,base+1,base+1,base+2,base+2,base+3,base+3,base)}
+
+      const wg=new THREE.BufferGeometry();
+      wg.setAttribute('position',new THREE.Float32BufferAttribute(wv,3));
+      wg.setIndex(wi);
+      g.add(new THREE.LineSegments(wg,new THREE.LineBasicMaterial({color,transparent:true,opacity:0.35})));
+
+      // Feet (same as full cyl, on belly side = +X)
+      const ft=mkFeet(bs);const fs=Math.max(vR*0.35,0.04);
+      ft.children[0].position.set(bs*(vR+0.005),-vL*0.22,0);ft.children[0].scale.setScalar(fs/0.1);ft.children[0].rotation.set(0,Math.PI/2,0);
+      ft.children[1].position.set(bs*(vR+0.005),vL*0.22,0);ft.children[1].scale.setScalar(fs/0.1);ft.children[1].rotation.set(0,Math.PI/2,0);
+      g.add(ft);
+      // Face
+      const fc=mkFace(bs);fc.position.y=vL/2+0.001;const fsc=vR/0.35;fc.scale.set(fsc,fsc,fsc);
+      g.add(fc);
+      return g;
+    }
+
+    // Position each half-cylinder: center at (+-sb*sa, 0, 0) where sb = L/2
+    // (same as full cyl but with sb=L/2 instead of (s1+s2)/2)
+    const sb_half=vL/2;
+    const fCyl=mkHalfCylCombo(0x3377dd,-1);
+    fCyl.position.set(sb_half*sa,0,0);
+    fG.add(fCyl);
+    fG.userData={type:'half'};
+
+    const rCyl=mkHalfCylCombo(0xdd4444,1);
+    rCyl.position.set(-sb_half*sa,0,0);
+    rG.add(rCyl);
+    rG.userData={type:'half'};
+  }
+
+  // --- Joint marker (black sphere) ---
+  const jm=new THREE.Mesh(new THREE.SphereGeometry(0.06,12,12),new THREE.MeshPhongMaterial({color:0x333333,emissive:0x111111}));
+  jm.position.set(0,jy,0);
+  ws.add(jm);
+
+  // --- Axis constraint lines from joint along n_f and n_r ---
+  const axLen=mode==='full'?(s1_full+vL)*1.05:vL*1.05;
+  const axMat=new THREE.LineDashedMaterial({color:0x999988,dashSize:0.1,gapSize:0.05,transparent:true,opacity:0.8,linewidth:1});
+  const axF=new THREE.Line(new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0,jy,0),
+    new THREE.Vector3(axLen*sa, jy+axLen*ca, 0)
+  ]),axMat.clone());axF.computeLineDistances();ws.add(axF);
+  const axR=new THREE.Line(new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0,jy,0),
+    new THREE.Vector3(-axLen*sa, jy+axLen*ca, 0)
+  ]),axMat.clone());axR.computeLineDistances();ws.add(axR);
+
+  // --- COM markers ---
+  // Cylinder COMs (yellow)
+  const comMat=new THREE.MeshPhongMaterial({color:0xddaa00,emissive:0x554400});
+  const comG=new THREE.SphereGeometry(0.055,10,10);
+  if(mode==='full'){
+    const cf=new THREE.Mesh(comG,comMat);cf.position.set(sb_full*sa,0,0);ws.add(cf);cf.name='comF';
+    const cr=new THREE.Mesh(comG.clone(),comMat.clone());cr.position.set(-sb_full*sa,0,0);ws.add(cr);cr.name='comR';
+  } else {
+    const dxF=(vL/2)*sa+delta*ca;
+    const cf=new THREE.Mesh(comG,comMat);cf.position.set(dxF,0,0);ws.add(cf);cf.name='comF';
+    const cr=new THREE.Mesh(comG.clone(),comMat.clone());cr.position.set(-dxF,0,0);ws.add(cr);cr.name='comR';
+  }
+  // System COM (red, at origin)
+  const sysCom=new THREE.Mesh(new THREE.SphereGeometry(0.065,10,10),new THREE.MeshPhongMaterial({color:0xdd2200,emissive:0x550000}));
+  sysCom.position.set(0,0,0);
+  ws.add(sysCom);
+
+  // Store geometry info for animation
+  ws.userData={jy,a,sa,ca,vR,vL,s1_full,sb_full:mode==='full'?sb_full:0,delta};
+}
+
+// === ANIMATION ===
+let vecObjs=[], torqueObjs=[];
+let showTorque=true; // show torque at start
+
+function applyAnim(){
+  const u=ws.userData;
+  if(!u) return;
+  const {jy,a,sa,ca,vR,vL}=u;
+
+  let rat;
+  if(mode==='full'){
+    const p=physFull(td,r0);
+    rat=p.rat;
+  } else {
+    const p=physHalf(td,r0);
+    rat=p.rat;
+  }
+
+  const flip=-rat*spin; // negative because gearing is negative => flip opposes spin projection
+  ws.rotation.x=flip;
+
+  const fG=ws.children[0], rG=ws.children[1];
+  if(!fG||!rG) return;
+
+  // Apply spin to each cylinder group's child (the cylinder assembly)
+  const fCyl=fG.children[0], rCyl=rG.children[0];
+  if(!fCyl||!rCyl) return;
+
+  // Front: rotate about its geometric axis (local Y) by spin
+  fCyl.quaternion.copy(
+    new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),-a)
+    .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),spin))
+  );
+  // Rear: rotate about its axis by -spin
+  rCyl.quaternion.copy(
+    new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),a)
+    .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),-spin))
+  );
+
+  // Position (doesn't change with spin for full cyl since COM is on axis)
+  if(mode==='full'){
+    fCyl.position.set(u.sb_full*sa,0,0);
+    rCyl.position.set(-u.sb_full*sa,0,0);
+  } else {
+    const sb_h=vL/2;
+    fCyl.position.set(sb_h*sa,0,0);
+    rCyl.position.set(-sb_h*sa,0,0);
+  }
+
+  // --- Angular momentum vectors (blue) ---
+  vecObjs.forEach(v=>sc.remove(v));vecObjs=[];
+  torqueObjs.forEach(v=>sc.remove(v));torqueObjs=[];
+
+  // Per-half angular momentum vectors from spin motion, from each COM
+  // For full cyl: L_half = I_ax*omega*n_hat (pure spin, no orbital since COM on axis)
+  // For half cyl: L_half = total of spin + orbital for that half
+  //   The x-component is I_nn*omega*sin(a) per half
+  //   The y-component is C*omega per half (where C includes spin and orbital)
+  // In both cases, the per-half L has both x and y components in the body frame,
+  // which get rotated by the flip angle.
+  
+  let Iax, C_half;
+  if(mode==='full'){
+    Iax=r0*r0/2;
+    C_half = Iax*ca; // y-comp of I_ax*omega*n_f = I_ax*omega*cos(a)
+  } else {
+    const c1=9*Math.PI*Math.PI-32;
+    Iax=c1*r0*r0/(18*Math.PI*Math.PI);
+    const delta4=4*r0/(3*Math.PI);
+    const dx_half=(0.5)*sa+delta4*ca; // (L/2)*sa+delta*ca with L=ell=1
+    C_half = Iax*ca + 1*dx_half*delta4; // I_nn*cos(a) + m*dx*delta (spin + orbital)
+  }
+  const Lhalf_x = Iax*sa; // x-component of per-half L (from spin only, same for both models)
+  const Lhalf_y = C_half;  // y-component of per-half L
+  const sc2 = 6.0;
+  const cf2=Math.cos(flip), sf2=Math.sin(flip);
+  
+  if(Math.abs(spd)>0.01 && spin>0.5){
+    // Front half L: (Lhalf_x, Lhalf_y, 0) in body frame, rotated by flip about x
+    const fLx = Lhalf_x*spd;
+    const fLy_body = Lhalf_y*spd;
+    const fLy = fLy_body*cf2, fLz = fLy_body*sf2;
+    const fLV = new THREE.Vector3(fLx, fLy, fLz);
+    // COM position of front half (in body frame then rotated by flip)
+    const sb3 = mode==='full' ? u.sb_full : vL/2;
+    const delta5 = mode==='full' ? 0 : 4*vR/(3*Math.PI);
+    const comFx_body = sb3*sa + delta5*ca;
+    const comFpos = new THREE.Vector3(comFx_body, 0, 0); // on x-axis in body frame (y=z=0)
+    if(fLV.length()>0.01){
+      const af=new THREE.ArrowHelper(fLV.clone().normalize(), comFpos, fLV.length()*sc2, 0xdd6600, 0.14, 0.07);
+      sc.add(af); vecObjs.push(af);
+    }
+    
+    // Rear half L: (Lhalf_x, -Lhalf_y, 0) in body frame (y-comp flips, x stays same)
+    const rLx = Lhalf_x*spd;
+    const rLy_body = -Lhalf_y*spd;
+    const rLy = rLy_body*cf2, rLz = rLy_body*sf2;
+    const rLV = new THREE.Vector3(rLx, rLy, rLz);
+    const comRpos = new THREE.Vector3(-comFx_body, 0, 0);
+    if(rLV.length()>0.01){
+      const ar=new THREE.ArrowHelper(rLV.clone().normalize(), comRpos, rLV.length()*sc2, 0xdd6600, 0.14, 0.07);
+      sc.add(ar); vecObjs.push(ar);
+    }
+    
+    // Whole-body flip L: I_xx_total * Omega along x, from origin
+    // This equals -(sum of x-components of the two per-half L's)
+    const flipLx = -(fLx + rLx);
+    if(Math.abs(flipLx)>0.01){
+      const aFlip=new THREE.ArrowHelper(new THREE.Vector3(flipLx,0,0).normalize(), new THREE.Vector3(0,0,0), Math.abs(flipLx)*sc2, 0x8833cc, 0.14, 0.07);
+      sc.add(aFlip); vecObjs.push(aFlip);
+    }
+  }
+
+  // --- Torque impulse (green, shown at start only) ---
+  if(showTorque && spin<0.5 && spin>0){
+    // Torque impulse: equal and opposite at the joint
+    // Joint position in lab frame (rotated by flip about x)
+    const jyBody = u.jy; // joint y in body frame
+    const jyLab = jyBody*cf2, jzLab = jyBody*sf2;
+    const jointPos = new THREE.Vector3(0, jyLab, jzLab);
+    const tLen=2.2;
+    // Torque on front half: along +y in body frame, rotated by flip
+    const tfy=cf2, tfz=sf2;
+    const tf=new THREE.ArrowHelper(new THREE.Vector3(0,tfy,tfz).normalize(), jointPos, tLen, 0x22aa44, 0.18, 0.09);
+    sc.add(tf);torqueObjs.push(tf);
+    // Torque on rear half: along -y
+    const tr=new THREE.ArrowHelper(new THREE.Vector3(0,-tfy,-tfz).normalize(), jointPos, tLen, 0x22aa44, 0.18, 0.09);
+    sc.add(tr);torqueObjs.push(tr);
+  }
+
+  // --- Update display ---
+  const flipDeg=flip*180/Math.PI;
+  const spinDeg=spin*180/Math.PI;
+  document.getElementById('fa').textContent=flipDeg.toFixed(1)+' deg';
+  document.getElementById('sa').textContent=spinDeg.toFixed(1)+' deg';
+  document.getElementById('gr').textContent=rat.toFixed(3);
+  document.getElementById('mn').textContent=(mode==='full'?'Full cylinder':'Half cylinder')+' | Turns for 180: '+(Math.PI/(rat*2*Math.PI)).toFixed(2);
+}
+
+function updInfo(){
+  let rat;
+  if(mode==='full') rat=physFull(td,r0).rat;
+  else rat=physHalf(td,r0).rat;
+  document.getElementById('fpt').textContent=(rat*360).toFixed(1)+' deg';
+  document.getElementById('tv2').textContent=(Math.PI/(rat*2*Math.PI)).toFixed(2);
+}
+
+// === CONTROLS ===
+document.getElementById('ts').oninput=function(){td=+this.value;document.getElementById('tv').textContent=td+' deg';spin=0;playing=false;document.getElementById('bp').textContent='Play';document.getElementById('bp').classList.remove('ac');buildScene();updInfo()};
+document.getElementById('rs').oninput=function(){r0=+this.value/100;document.getElementById('rv').textContent=r0.toFixed(2);spin=0;playing=false;document.getElementById('bp').textContent='Play';document.getElementById('bp').classList.remove('ac');buildScene();updInfo()};
+document.getElementById('ss').oninput=function(){spd=+this.value/10;document.getElementById('sv').textContent=spd.toFixed(1)+'x'};
+document.getElementById('bp').onclick=function(){playing=!playing;this.textContent=playing?'Pause':'Play';this.classList.toggle('ac',playing)};
+document.getElementById('br').onclick=function(){spin=0;playing=false;ws.rotation.x=0;document.getElementById('bp').textContent='Play';document.getElementById('bp').classList.remove('ac');showTorque=true;applyAnim()};
+document.getElementById('bd').onclick=function(){
+  td=mode==='half'?DEF_TD_HALF:DEF_TD;r0=mode==='half'?DEF_R0_HALF:DEF_R0;spd=1;
+  document.getElementById('ts').value=td;document.getElementById('tv').textContent=td+' deg';
+  document.getElementById('rs').value=r0*100;document.getElementById('rv').textContent=r0.toFixed(2);
+  document.getElementById('ss').value=10;document.getElementById('sv').textContent='1.0x';
+  spin=0;playing=false;showTorque=true;document.getElementById('bp').textContent='Play';document.getElementById('bp').classList.remove('ac');
+  buildScene();updInfo()};
+document.getElementById('bm').onclick=function(){
+  mode=mode==='full'?'half':'full';
+  this.textContent=mode==='full'?'Full Cyl':'Half Cyl';
+  // Apply mode-specific defaults
+  if(mode==='half'){td=DEF_TD_HALF;r0=DEF_R0_HALF}else{td=DEF_TD;r0=DEF_R0}
+  document.getElementById('ts').value=td;document.getElementById('tv').textContent=td+' deg';
+  document.getElementById('rs').value=r0*100;document.getElementById('rv').textContent=r0.toFixed(2);
+  spin=0;playing=false;showTorque=true;document.getElementById('bp').textContent='Play';document.getElementById('bp').classList.remove('ac');
+  buildScene();updInfo()};
+
+// === MAIN LOOP ===
+let lt=0;
+function anim(t){
+  requestAnimationFrame(anim);
+  const dt=Math.min((t-lt)/1000,0.05);lt=t;
+  if(playing){
+    spin+=spd*dt;
+    if(spin>0.5) showTorque=false; // hide torque after initial impulse
+    const rat=mode==='full'?physFull(td,r0).rat:physHalf(td,r0).rat;
+    if(rat*spin>=Math.PI){spin=Math.PI/rat;playing=false;document.getElementById('bp').textContent='Play';document.getElementById('bp').classList.remove('ac')}
+  }
+  applyAnim();uc();ren.render(sc,cam);
+}
+
+// Help modal
+document.getElementById('bh').onclick=function(){
+  document.getElementById('helpOverlay').style.display='flex';
+  if(playing){playing=false;document.getElementById('bp').textContent='Play';document.getElementById('bp').classList.remove('ac')}
+};
+document.getElementById('helpClose').onclick=function(){document.getElementById('helpOverlay').style.display='none'};
+document.getElementById('helpOverlay').onclick=function(e){if(e.target===this)this.style.display='none'};
+
+buildScene();updInfo();applyAnim();anim(0);
+window.onresize=()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();ren.setSize(innerWidth,innerHeight)};
+</script>
+</body>
+</html>
